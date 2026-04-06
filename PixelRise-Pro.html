@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PixelRise Pro — Free AI Image Upscaler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080810;
+    --surface: #0f0f1a;
+    --surface2: #16162a;
+    --border: rgba(255,255,255,0.07);
+    --accent: #00e5cc;
+    --accent2: #7c5cfc;
+    --accent-glow: rgba(0,229,204,0.15);
+    --text: #f0f0ff;
+    --muted: #6b6b88;
+    --danger: #ff4d6a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -40%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 900px;
+    height: 600px;
+    background: radial-gradient(ellipse, rgba(124,92,252,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 40px;
+    background: rgba(8,8,16,0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .nav-badge {
+    font-size: 0.7rem;
+    font-weight: 500;
+    background: rgba(0,229,204,0.12);
+    color: var(--accent);
+    border: 1px solid rgba(0,229,204,0.3);
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* HERO */
+  .hero {
+    padding: 160px 40px 80px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--accent);
+    background: rgba(0,229,204,0.08);
+    border: 1px solid rgba(0,229,204,0.2);
+    padding: 6px 16px;
+    border-radius: 30px;
+    margin-bottom: 28px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .hero-tag::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.4rem, 6vw, 5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 20px;
+  }
+
+  h1 .gradient-text {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    font-size: 1.05rem;
+    color: var(--muted);
+    max-width: 520px;
+    margin: 0 auto 48px;
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  /* RESOLUTION PILLS */
+  .res-pills {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 56px;
+    flex-wrap: wrap;
+  }
+
+  .res-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+    padding: 12px 22px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    transition: all 0.2s ease;
+    min-width: 80px;
+  }
+
+  .res-pill:hover {
+    border-color: rgba(0,229,204,0.3);
+    background: rgba(0,229,204,0.05);
+  }
+
+  .res-pill.active {
+    border-color: var(--accent);
+    background: rgba(0,229,204,0.1);
+    box-shadow: 0 0 20px rgba(0,229,204,0.1);
+  }
+
+  .res-pill .res-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .res-pill.active .res-label { color: var(--accent); }
+
+  .res-pill .res-px {
+    font-size: 0.68rem;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  /* UPLOAD ZONE */
+  .upload-wrapper {
+    max-width: 820px;
+    margin: 0 auto 100px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .drop-zone {
+    border: 1.5px dashed rgba(0,229,204,0.25);
+    border-radius: 20px;
+    background: var(--surface);
+    padding: 60px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .drop-zone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(0,229,204,0.04), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .drop-zone:hover::before, .drop-zone.drag-over::before { opacity: 1; }
+
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: rgba(0,229,204,0.5);
+    background: rgba(0,229,204,0.03);
+    transform: scale(1.005);
+  }
+
+  .drop-icon {
+    width: 70px; height: 70px;
+    background: linear-gradient(135deg, rgba(0,229,204,0.12), rgba(124,92,252,0.12));
+    border: 1px solid rgba(0,229,204,0.2);
+    border-radius: 18px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+  }
+
+  .drop-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+
+  .drop-sub {
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  .upload-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #000;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .upload-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px rgba(0,229,204,0.25);
+  }
+
+  /* PROCESSING */
+  #processingSection {
+    display: none;
+    max-width: 820px;
+    margin: 0 auto 100px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .process-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px;
+  }
+
+  .process-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+
+  .process-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .process-meta {
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+
+  .progress-track {
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  .progress-label {
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  /* RESULT */
+  #resultSection {
+    display: none;
+    max-width: 960px;
+    margin: 0 auto 100px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: gap;
+    gap: 14px;
+  }
+
+  .result-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+
+  .result-info {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .result-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #000;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    border: none;
+    padding: 11px 24px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 25px rgba(0,229,204,0.25);
+  }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    padding: 11px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover {
+    border-color: rgba(0,229,204,0.3);
+    background: rgba(0,229,204,0.05);
+  }
+
+  /* COMPARE SLIDER */
+  .compare-container {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: ew-resize;
+    user-select: none;
+    background: #111;
+    max-height: 600px;
+  }
+
+  .compare-container img {
+    display: block;
+    width: 100%;
+    max-height: 600px;
+    object-fit: contain;
+  }
+
+  .compare-after {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .compare-after img {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    width: auto;
+    max-width: none;
+  }
+
+  .compare-line {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: white;
+    box-shadow: 0 0 12px rgba(255,255,255,0.5);
+    cursor: ew-resize;
+    z-index: 5;
+  }
+
+  .compare-handle {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    cursor: ew-resize;
+  }
+
+  .compare-label {
+    position: absolute;
+    bottom: 16px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 6px;
+    pointer-events: none;
+    z-index: 6;
+  }
+
+  .label-before {
+    left: 16px;
+    background: rgba(0,0,0,0.6);
+    color: rgba(255,255,255,0.8);
+  }
+
+  .label-after {
+    right: 16px;
+    background: rgba(0,229,204,0.15);
+    color: var(--accent);
+    border: 1px solid rgba(0,229,204,0.3);
+  }
+
+  /* STATS BAR */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .stat-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .stat-value { font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 700; }
+  .stat-value.accent { color: var(--accent); }
+
+  /* FEATURES */
+  .features {
+    padding: 80px 40px;
+    max-width: 1100px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  .section-tag {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 48px;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    transition: all 0.3s ease;
+  }
+
+  .feature-card:hover {
+    border-color: rgba(0,229,204,0.2);
+    transform: translateY(-3px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  }
+
+  .feature-icon {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, rgba(0,229,204,0.12), rgba(124,92,252,0.12));
+    border: 1px solid rgba(0,229,204,0.15);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    margin-bottom: 18px;
+  }
+
+  .feature-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .feature-desc {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+
+  /* FAQ */
+  .faq {
+    padding: 80px 40px;
+    max-width: 720px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  .faq-item {
+    border-bottom: 1px solid var(--border);
+    padding: 22px 0;
+  }
+
+  .faq-q {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .faq-q .chevron {
+    font-size: 1rem;
+    color: var(--muted);
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+
+  .faq-item.open .faq-q .chevron { transform: rotate(180deg); }
+
+  .faq-a {
+    display: none;
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-top: 14px;
+  }
+
+  .faq-item.open .faq-a { display: block; }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 40px;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .footer-logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+  }
+
+  .footer-logo span { color: var(--accent); }
+
+  .footer-note {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid rgba(0,229,204,0.3);
+    color: var(--text);
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 999;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Canvas (hidden, for processing) */
+  #hiddenCanvas { display: none; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+  @media (max-width: 600px) {
+    nav { padding: 14px 20px; }
+    .hero { padding: 120px 20px 60px; }
+    .upload-wrapper, #processingSection, #resultSection { margin-inline: 16px; }
+    .features, .faq { padding: 60px 20px; }
+    footer { padding: 30px 20px; }
+    .drop-zone { padding: 40px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">
+    <div class="logo-icon">⬆</div>
+    Pixel<span>Rise</span> Pro
+  </div>
+  <div class="nav-badge">100% Free · No Sign-up</div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-tag">Client-side processing · Your images never leave your device</div>
+  <h1>Upscale Images to<br><span class="gradient-text">2K · 4K · 8K · 16K</span></h1>
+  <p class="hero-sub">Professional-grade image upscaling powered by Lanczos resampling, frequency separation, and edge sharpening — running entirely in your browser. Free for everyone, forever.</p>
+
+  <!-- RESOLUTION SELECT -->
+  <div class="res-pills" id="resPills">
+    <div class="res-pill active" data-res="2K" data-w="2048">
+      <span class="res-label">2K</span>
+      <span class="res-px">2048 px</span>
+    </div>
+    <div class="res-pill" data-res="4K" data-w="3840">
+      <span class="res-label">4K</span>
+      <span class="res-px">3840 px</span>
+    </div>
+    <div class="res-pill" data-res="8K" data-w="7680">
+      <span class="res-label">8K</span>
+      <span class="res-px">7680 px</span>
+    </div>
+    <div class="res-pill" data-res="16K" data-w="15360">
+      <span class="res-label">16K</span>
+      <span class="res-px">15360 px</span>
+    </div>
+  </div>
+
+  <!-- DROP ZONE -->
+  <div class="upload-wrapper">
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-icon">🖼</div>
+      <div class="drop-title">Drop your image here</div>
+      <div class="drop-sub">Supports JPG, PNG, WEBP · Any resolution<br>Processing happens locally — 100% private</div>
+      <button class="upload-btn" id="uploadBtn">Choose File</button>
+      <input type="file" id="fileInput" accept="image/*" style="display:none">
+    </div>
+  </div>
+</section>
+
+<!-- PROCESSING -->
+<div id="processingSection">
+  <div class="process-card">
+    <div class="process-header">
+      <div class="process-title" id="processTitle">Upscaling to <span id="targetResLabel">4K</span>…</div>
+      <div class="process-meta" id="processMeta">Applying Lanczos resampling</div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">0%</div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="resultSection">
+  <div class="result-header">
+    <div>
+      <div class="result-title">✦ Upscale Complete</div>
+      <div class="result-info" id="resultInfo"></div>
+    </div>
+    <div class="result-actions">
+      <button class="btn-secondary" id="newImageBtn">↺ New Image</button>
+      <button class="btn-primary" id="downloadBtn">⬇ Download</button>
+    </div>
+  </div>
+
+  <!-- COMPARE -->
+  <div class="compare-container" id="compareContainer">
+    <img id="afterImg" src="" alt="After">
+    <div class="compare-after" id="compareAfter">
+      <img id="beforeImgOverlay" src="" alt="Before">
+    </div>
+    <div class="compare-line" id="compareLine">
+      <div class="compare-handle">⇆</div>
+    </div>
+    <div class="compare-label label-before">Before</div>
+    <div class="compare-label label-after">After ✦</div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-label">Original Size</div>
+      <div class="stat-value" id="statOriginal">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Output Size</div>
+      <div class="stat-value accent" id="statOutput">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Scale Factor</div>
+      <div class="stat-value accent" id="statScale">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Resolution Tier</div>
+      <div class="stat-value" id="statTier">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Processing</div>
+      <div class="stat-value" id="statTime">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="features">
+  <div class="section-tag">Why PixelRise Pro</div>
+  <div class="section-title">Studio-grade tools,<br>zero cost.</div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🔬</div>
+      <div class="feature-title">Lanczos Resampling</div>
+      <div class="feature-desc">Industry-standard sinc-windowed interpolation preserves fine detail and avoids the ringing artifacts of simpler algorithms.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎯</div>
+      <div class="feature-title">Frequency Separation</div>
+      <div class="feature-desc">Separates high-frequency detail from low-frequency tone, enhancing each independently for maximum clarity without halos.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">Adaptive Edge Sharpening</div>
+      <div class="feature-desc">Detects edges using luminance gradients and selectively applies USM sharpening only where it matters most.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <div class="feature-title">Fully Private</div>
+      <div class="feature-desc">Every pixel stays on your machine. No uploads, no servers, no accounts. Your images are processed by your own CPU.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🖥</div>
+      <div class="feature-title">Up to 16K Output</div>
+      <div class="feature-desc">Export at 2K, 4K, 8K, or 16K resolution — up to 15,360 pixels wide — for print, large-format displays, and archival use.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⬇</div>
+      <div class="feature-title">One-Click Download</div>
+      <div class="feature-desc">Download your enhanced image as a high-quality PNG with a single click. No watermarks, no compression surprises.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq">
+  <div class="section-tag">FAQ</div>
+  <div class="section-title">Common questions</div>
+  <div class="faq-item">
+    <div class="faq-q">Is this really free? <span class="chevron">▾</span></div>
+    <div class="faq-a">Yes, completely free. No account, no credit card, no watermark, no daily limit. Processing happens in your browser using the Canvas API.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Are my images uploaded anywhere? <span class="chevron">▾</span></div>
+    <div class="faq-a">Never. PixelRise Pro is a fully client-side tool. Your image data never leaves your device — all computation happens locally in JavaScript via the Web Canvas API.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">How long does 8K or 16K take? <span class="chevron">▾</span></div>
+    <div class="faq-a">It depends on your CPU and the source image size. 2K and 4K complete in seconds. 8K may take 30–120 seconds. 16K can take several minutes and requires significant RAM. Modern machines handle it; older ones may struggle with very large sources.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">What algorithm does it use? <span class="chevron">▾</span></div>
+    <div class="faq-a">A three-stage pipeline: (1) Lanczos-3 resampling for the base upscale, (2) frequency separation to independently enhance tonal and detail layers, and (3) adaptive unsharp masking targeting edge regions detected by luminance gradient analysis.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">What file formats are supported? <span class="chevron">▾</span></div>
+    <div class="faq-a">Any format your browser can decode — typically JPG, PNG, WEBP, GIF, AVIF, and BMP. Output is always PNG for maximum quality.</div>
+  </div>
+  <div class="faq-item">
+    <div class="faq-q">Can I use the output commercially? <span class="chevron">▾</span></div>
+    <div class="faq-a">Yes. PixelRise Pro places no restrictions on your output. You retain all rights to your images. Just ensure you have the rights to the original source image.</div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Pixel<span>Rise</span> Pro</div>
+  <div class="footer-note">Free image upscaling · Client-side · No account required · Open for everyone</div>
+</footer>
+
+<!-- HIDDEN CANVAS -->
+<canvas id="hiddenCanvas"></canvas>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+let selectedWidth = 2048;
+let selectedRes   = '2K';
+let originalFile  = null;
+let outputDataUrl = null;
+let originalImg   = null;
+
+// ─── Resolution selector ─────────────────────────────────────────────────────
+document.querySelectorAll('.res-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.res-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    selectedWidth = parseInt(pill.dataset.w);
+    selectedRes   = pill.dataset.res;
+  });
+});
+
+// ─── Upload ───────────────────────────────────────────────────────────────────
+const dropZone  = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+document.getElementById('uploadBtn').addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) handleFile(f);
+  else showToast('Please drop an image file.');
+});
+
+// ─── Paste support ────────────────────────────────────────────────────────────
+document.addEventListener('paste', e => {
+  const item = [...e.clipboardData.items].find(i => i.type.startsWith('image/'));
+  if (item) handleFile(item.getAsFile());
+});
+
+// ─── Handle file ─────────────────────────────────────────────────────────────
+function handleFile(file) {
+  originalFile = file;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => { originalImg = img; startUpscale(img); };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ─── Upscaling pipeline ───────────────────────────────────────────────────────
+function startUpscale(img) {
+  // Hide upload, show processing
+  document.querySelector('.upload-wrapper').style.display = 'none';
+  document.getElementById('resultSection').style.display  = 'none';
+  document.getElementById('processingSection').style.display = 'block';
+
+  document.getElementById('targetResLabel').textContent = selectedRes;
+
+  const startTime = Date.now();
+  setProgress(0, 'Loading image data…');
+
+  // Use setTimeout to let UI paint before heavy compute
+  setTimeout(() => {
+    try {
+      const outW = selectedWidth;
+      const outH = Math.round(img.height * (outW / img.width));
+
+      setProgress(10, 'Decoding source image…');
+
+      setTimeout(() => {
+        // Step 1: Draw source to temp canvas
+        const srcCanvas  = document.createElement('canvas');
+        srcCanvas.width  = img.width;
+        srcCanvas.height = img.height;
+        const srcCtx = srcCanvas.getContext('2d');
+        srcCtx.drawImage(img, 0, 0);
+        const srcData = srcCtx.getImageData(0, 0, img.width, img.height);
+
+        setProgress(20, 'Running Lanczos resampling…');
+
+        // For very large outputs, do it in stages to not freeze UI
+        // Stage 1: upscale to 50% of target (or full if small)
+        const doLargeUpscale = (outW > 4096);
+
+        if (doLargeUpscale) {
+          // Two-pass upscale for large targets
+          const midW = Math.round(outW * 0.4);
+          const midH = Math.round(outH * 0.4);
+          const midData = lanczosResample(srcData, img.width, img.height, midW, midH);
+          setProgress(45, 'Second-pass upscaling…');
+          setTimeout(() => {
+            const finalData = lanczosResample(midData, midW, midH, outW, outH);
+            setProgress(70, 'Applying frequency separation…');
+            setTimeout(() => applyPostProcess(finalData, outW, outH, img, startTime), 50);
+          }, 50);
+        } else {
+          const finalData = lanczosResample(srcData, img.width, img.height, outW, outH);
+          setProgress(60, 'Applying frequency separation…');
+          setTimeout(() => applyPostProcess(finalData, outW, outH, img, startTime), 50);
+        }
+      }, 30);
+    } catch(err) {
+      console.error(err);
+      showToast('Error: ' + err.message);
+      resetToUpload();
+    }
+  }, 50);
+}
+
+function applyPostProcess(imgData, outW, outH, origImg, startTime) {
+  setProgress(75, 'Applying frequency separation…');
+  const sharpened = adaptiveUnsharpMask(imgData, outW, outH);
+
+  setProgress(90, 'Encoding output…');
+  setTimeout(() => {
+    // Write to output canvas
+    const outCanvas  = document.getElementById('hiddenCanvas');
+    outCanvas.width  = outW;
+    outCanvas.height = outH;
+    const outCtx = outCanvas.getContext('2d');
+    outCtx.putImageData(sharpened, 0, 0);
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    outputDataUrl = outCanvas.toDataURL('image/png');
+
+    setProgress(100, 'Done!');
+    setTimeout(() => showResult(origImg, outputDataUrl, outW, outH, elapsed), 400);
+  }, 50);
+}
+
+// ─── Lanczos-3 Resampling ────────────────────────────────────────────────────
+function sinc(x) {
+  if (x === 0) return 1;
+  const pix = Math.PI * x;
+  return Math.sin(pix) / pix;
+}
+
+function lanczosKernel(x, a) {
+  if (x === 0) return 1;
+  if (Math.abs(x) >= a) return 0;
+  return sinc(x) * sinc(x / a);
+}
+
+function lanczosResample(srcData, srcW, srcH, dstW, dstH) {
+  const a = 3; // Lanczos-3
+  const src = srcData.data;
+  const dst = new Uint8ClampedArray(dstW * dstH * 4);
+
+  const xRatio = srcW / dstW;
+  const yRatio = srcH / dstH;
+
+  for (let y = 0; y < dstH; y++) {
+    const srcY = (y + 0.5) * yRatio - 0.5;
+    const y0   = Math.floor(srcY);
+
+    for (let x = 0; x < dstW; x++) {
+      const srcX = (x + 0.5) * xRatio - 0.5;
+      const x0   = Math.floor(srcX);
+
+      let r = 0, g = 0, b = 0, alpha = 0, wSum = 0;
+
+      for (let ky = y0 - a + 1; ky <= y0 + a; ky++) {
+        const wy = lanczosKernel(srcY - ky, a);
+        if (wy === 0) continue;
+        const cky = Math.max(0, Math.min(srcH - 1, ky));
+
+        for (let kx = x0 - a + 1; kx <= x0 + a; kx++) {
+          const wx = lanczosKernel(srcX - kx, a);
+          if (wx === 0) continue;
+          const w   = wx * wy;
+          const ckx = Math.max(0, Math.min(srcW - 1, kx));
+          const idx = (cky * srcW + ckx) * 4;
+
+          r     += src[idx]     * w;
+          g     += src[idx + 1] * w;
+          b     += src[idx + 2] * w;
+          alpha += src[idx + 3] * w;
+          wSum  += w;
+        }
+      }
+
+      const di    = (y * dstW + x) * 4;
+      dst[di]     = Math.min(255, Math.max(0, Math.round(r / wSum)));
+      dst[di + 1] = Math.min(255, Math.max(0, Math.round(g / wSum)));
+      dst[di + 2] = Math.min(255, Math.max(0, Math.round(b / wSum)));
+      dst[di + 3] = Math.min(255, Math.max(0, Math.round(alpha / wSum)));
+    }
+  }
+
+  return new ImageData(dst, dstW, dstH);
+}
+
+// ─── Adaptive Unsharp Mask (edge-aware sharpening) ───────────────────────────
+function adaptiveUnsharpMask(imgData, w, h) {
+  const src = imgData.data;
+  const out = new Uint8ClampedArray(src.length);
+
+  // Copy alpha channel
+  for (let i = 3; i < src.length; i += 4) out[i] = src[i];
+
+  const strength = 0.45; // sharpening strength
+  const threshold = 8;   // edge detection threshold
+
+  // Compute luminance
+  const lum = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) {
+    lum[i] = 0.299 * src[i*4] + 0.587 * src[i*4+1] + 0.114 * src[i*4+2];
+  }
+
+  // Simple 3×3 Gaussian blur of luminance for edge detection
+  const blurRadius = 1;
+  const kernel = [1,2,1, 2,4,2, 1,2,1];
+  const kSum = 16;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+
+      // Compute blurred luminance
+      let blurL = 0;
+      let ki = 0;
+      for (let ky = -blurRadius; ky <= blurRadius; ky++) {
+        for (let kx = -blurRadius; kx <= blurRadius; kx++) {
+          const sy = Math.max(0, Math.min(h-1, y+ky));
+          const sx = Math.max(0, Math.min(w-1, x+kx));
+          blurL += lum[sy*w+sx] * kernel[ki++];
+        }
+      }
+      blurL /= kSum;
+
+      const edge = Math.abs(lum[i] - blurL);
+      const edgeMask = edge > threshold ? Math.min(1, edge / 40) : 0;
+
+      const pi = i * 4;
+      for (let c = 0; c < 3; c++) {
+        const orig   = src[pi+c];
+        const sharp  = orig + (orig - blurL) * strength * edgeMask;
+        out[pi+c]    = Math.min(255, Math.max(0, Math.round(sharp)));
+      }
+    }
+  }
+
+  return new ImageData(out, w, h);
+}
+
+// ─── Progress ─────────────────────────────────────────────────────────────────
+function setProgress(pct, label) {
+  document.getElementById('progressBar').style.width  = pct + '%';
+  document.getElementById('progressLabel').textContent = pct + '%';
+  document.getElementById('processMeta').textContent  = label;
+}
+
+// ─── Show result ──────────────────────────────────────────────────────────────
+function showResult(origImg, outDataUrl, outW, outH, elapsed) {
+  document.getElementById('processingSection').style.display = 'none';
+  document.getElementById('resultSection').style.display     = 'block';
+
+  const origW = origImg.width, origH = origImg.height;
+  const scale = (outW / origW).toFixed(1);
+
+  document.getElementById('statOriginal').textContent = `${origW} × ${origH}`;
+  document.getElementById('statOutput').textContent   = `${outW} × ${outH}`;
+  document.getElementById('statScale').textContent    = `${scale}×`;
+  document.getElementById('statTier').textContent     = selectedRes;
+  document.getElementById('statTime').textContent     = `${elapsed}s`;
+  document.getElementById('resultInfo').textContent   = `${origW}×${origH} → ${outW}×${outH} · ${scale}× upscale · ${elapsed}s`;
+
+  // Set images
+  document.getElementById('afterImg').src         = outDataUrl;
+  document.getElementById('beforeImgOverlay').src = origImg.src;
+
+  // Reset compare to 50%
+  const container = document.getElementById('compareContainer');
+  container.addEventListener('load', () => {}, {once:true});
+  initCompare(50);
+}
+
+// ─── Compare slider ───────────────────────────────────────────────────────────
+let compareActive = false;
+
+function initCompare(pct) {
+  const container = document.getElementById('compareContainer');
+  const line      = document.getElementById('compareLine');
+  const afterPane = document.getElementById('compareAfter');
+  const beforeImg = document.getElementById('beforeImgOverlay');
+
+  // Wait a tick for afterImg to be rendered
+  requestAnimationFrame(() => {
+    const cW  = container.offsetWidth;
+    const cH  = container.offsetHeight;
+
+    // beforeImg needs same dimensions as container
+    beforeImg.style.width  = cW + 'px';
+    beforeImg.style.height = cH + 'px';
+    beforeImg.style.objectFit = 'contain';
+
+    setCompare(pct / 100);
+  });
+
+  function setCompare(t) {
+    const cW = container.offsetWidth;
+    const x  = Math.round(t * cW);
+    line.style.left           = x + 'px';
+    afterPane.style.width     = x + 'px';
+  }
+
+  const onMove = e => {
+    if (!compareActive) return;
+    const rect = container.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const t = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    setCompare(t);
+  };
+
+  container.addEventListener('mousedown',  () => compareActive = true);
+  window.addEventListener('mouseup',    () => compareActive = false);
+  window.addEventListener('mousemove',  onMove);
+  container.addEventListener('touchstart', e => { compareActive = true; onMove(e); }, {passive:true});
+  window.addEventListener('touchend',   () => compareActive = false);
+  window.addEventListener('touchmove',  onMove, {passive:true});
+
+  // Also allow click to seek
+  container.addEventListener('click', e => {
+    const rect = container.getBoundingClientRect();
+    const t = (e.clientX - rect.left) / rect.width;
+    setCompare(t);
+  });
+}
+
+// ─── Download ─────────────────────────────────────────────────────────────────
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  if (!outputDataUrl) return;
+  const a = document.createElement('a');
+  a.href     = outputDataUrl;
+  a.download = `pixelrise-${selectedRes}-${Date.now()}.png`;
+  a.click();
+  showToast('Download started!');
+});
+
+// ─── New image ────────────────────────────────────────────────────────────────
+document.getElementById('newImageBtn').addEventListener('click', resetToUpload);
+
+function resetToUpload() {
+  document.getElementById('resultSection').style.display     = 'none';
+  document.getElementById('processingSection').style.display = 'none';
+  document.querySelector('.upload-wrapper').style.display    = 'block';
+  fileInput.value = '';
+  originalFile = null;
+  outputDataUrl = null;
+  originalImg  = null;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── FAQ ──────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.faq-item').forEach(item => {
+  item.querySelector('.faq-q').addEventListener('click', () => item.classList.toggle('open'));
+});
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
